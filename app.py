@@ -1,4 +1,4 @@
-from flask import Flask , render_template , redirect
+from flask import Flask , render_template , redirect , url_for , request
 
 import datetime
 
@@ -21,7 +21,8 @@ def inject_current_year():
 @app.route('/')
 def index():
     all_records = User.query.all()
-    return render_template('index.html',users = all_records)
+    message = request.args.get('message')
+    return render_template('index.html',users = all_records , message = message)
 
 @app.route('/about')
 def about():
@@ -39,7 +40,7 @@ def deleteTodo(id):
     if user_to_delete:
      db.session.delete(user_to_delete)
      db.session.commit()
-     return redirect('/')
+     return redirect(url_for('/', message = "User successfully deleted"))
 
 
 
