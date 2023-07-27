@@ -1,16 +1,59 @@
-<!DOCTYPE html>
-<html lang="en">
+<!-- home.html -->
+{% extends 'base.html' %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
+{% block title %}Home{% endblock %}
 
-<body>
-    <h1>Hello Flask {{ diet.name }}</h1>
-    <h1>Age <p>Age: {{ diet.age if diet.age > 0 else 0 }}</p>
-    </h1>
-</body>
-
-</html>
+{% block content %}
+   <div class="container">
+     <div class="row">
+         <div class="col-md-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between">
+                  <p>Todos</p>
+                  <a href="" class="btn btn-outline-primary btn-sm">Create New</a>
+                </div>
+                <div class="card-body">
+                    
+                    <table class="table table-bordered">
+                          <thead>
+                            <tr>
+                                <th>
+                                    SL
+                                </th>
+                                <th>
+                                    Name
+                                </th>
+                                <th>
+                                    Email
+                                </th>
+                                <th>
+                                    Image
+                                </th>
+                                <th>
+                                    Action
+                                </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {% for user in users %}
+                              <tr>
+                                  <td>{{ user.id }}</td>
+                                  <td>{{ user.name }}</td>
+                                  <td>{{ user.email }}</td>
+                                  <td>{{ user.image }}</td>
+                                  <td>
+                                      <a href="" class="btn btn-primary btn-sm">Edit</a>
+                                      <a href="{{ url_for('deleteTodo', id=user.id) }}" 
+                                        onclick="return confirm('Are you sure you want to delete ?')"
+                                       class="btn btn-danger btn-sm">X</a>
+                                  </td>
+                              </tr>
+                             {% endfor %} 
+                          </tbody>
+                    </table>
+                </div>
+              </div>
+         </div>
+     </div>
+   </div>
+{% endblock %}
