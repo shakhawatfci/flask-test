@@ -1,0 +1,49 @@
+<!-- home.html -->
+{% extends 'base.html' %}
+
+{% block title %} Update User {% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between">
+                    <p>Update User</p>
+                    <a href="/" class="btn btn-outline-primary btn-sm">View</a>
+                </div>
+                <div class="card-body">
+
+                    <div class="col-md-6  mx-auto">
+
+                        {% if errors %}
+                        <ul>
+                            {% for message in errors %}
+                            <li class="text-danger">{{ message }}</li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+                        <form action="{{ url_for('updateUser', id=user.id) }}" method="POST"" method=" post">
+                            <input type="hidden" name="_method" value="PUT">
+                            <div class="form-group mt-2">
+                                <label for="dd">Name</label>
+                                <input type="text" value="{{ user.name }}" class="form-control" placeholder="Name"
+                                    name="name">
+                            </div>
+                            <div class="form-group mt-2">
+                                <label for="dd">Email</label>
+                                <input type="text" value="{{ user.email }}" class="form-control" placeholder="Email"
+                                    name="email">
+                            </div>
+                            <div class="form-group mt-2">
+                                <Button class="btn btn-success" type="submit">Save</Button>
+                            </div>
+                        </form>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

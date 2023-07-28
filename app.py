@@ -1,21 +1,30 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash , session
 import datetime
 
 from flask_sqlalchemy import SQLAlchemy
 from model.User import db ,  User
 from werkzeug.security import generate_password_hash, check_password_hash
+from library.UserValidator import validate_input , validate_user_update_input
 
 
 app = Flask(__name__)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://root:@localhost/python_test'
-
+app.secret_key = 'mysecretkey'
 db.init_app(app)
 
 # Context processor to pass current_year to all templates
 @app.context_processor
 def inject_current_year():
     return {'current_year': datetime.datetime.now().year}
+
+@app.route('/login')
+def login_page():
+    return render_template('auth/login.html')
+
+@app.route('/login',methods=['POST'])
+def login():
+    return render_template('auth/login.html')
 
 @app.route('/')
 def index():
@@ -54,33 +63,49 @@ def saveUser():
     
     return redirect('/')
 
+@app.route('/user/edit/<id>')
+def editUser(id):
+     user = User.query.filter_by(id=id).first()
+     if user : 
+        errors = session.pop('errors', {})
+        return render_template('edit_user.html', user=user, errors=errors)
+     else :
+         return "not found"
+     
+     
+@app.route('/user/<id>',methods=['PUT' , 'POST'])
+def updateUser(id):
+    name = request.form.get('name')
+    email = request.form.get('email')
+    
+    errors = validate_user_update_input(name , email)
+
+    if errors:
+        # If there are validation errors, render the form again with the error messages
+     session['errors'] = errors
+     return redirect(url_for('editUser', id=id))  # Corrected: Use 'editUser' instead of editUser
+    
+    user = User.query.filter_by(id=id).first()
+     
+    if user : 
+        user.name  = name
+        user.email = email
+        db.session.commit()
+        
+        return redirect('/')
+ 
+
 
 @app.route('/todo/user/<id>')
 def deleteTodo(id):
-    user_to_delete = User.query.filter_by(id=id).first()
-    if user_to_delete:
-     db.session.delete(user_to_delete)
+    user = User.query.filter_by(id=id).first()
+    if user:
+     db.session.delete(user)
      db.session.commit()
      return redirect('/')
     #  return redirect(url_for('/', message = "User successfully deleted"))
 
-def validate_input(name, password , email):
-    errors = []
 
-    # Validate name
-    if not name:
-        errors.append('Username is required.')
-        
-    if not email:
-        errors.append('email is required.')
-
-    # Validate password
-    if not password:
-        errors.append('Password is required.')
-    elif len(password) < 6:
-        errors.append('Password must be at least 6 characters long.')
-
-    return errors
 
 if __name__ == '__main__':
     app.run(debug=True)
