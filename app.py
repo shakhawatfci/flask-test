@@ -1,10 +1,13 @@
-from flask import Flask, render_template, request, redirect, url_for, flash , session
+from flask import Flask, render_template, request, redirect, url_for, flash , session 
 import datetime
 
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import desc
 from model.User import db ,  User
 from werkzeug.security import generate_password_hash, check_password_hash
 from library.UserValidator import validate_input , validate_user_update_input
+import uuid
+import os
 
 
 app = Flask(__name__)
@@ -13,6 +16,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://root:@localhost/
 app.secret_key = 'mysecretkey'
 db.init_app(app)
 
+UPLOAD_FOLDER = 'static/images/uploads'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # Context processor to pass current_year to all templates
 @app.context_processor
 def inject_current_year():
@@ -28,7 +33,9 @@ def login():
 
 @app.route('/')
 def index():
-    all_records = User.query.all()
+    page = int(request.args.get('page', 1))
+    per_page = 5
+    all_records = User.query.order_by(desc(User.created_at)).paginate(page=page, per_page=per_page)
     message = ''
     if(request.args.get('message')):
         message = request.args.get('message')
@@ -53,11 +60,21 @@ def saveUser():
     errors = validate_input(name, password , email)
 
     if errors:
-        # If there are validation errors, render the form again with the error messages
         return render_template('create_user.html', errors=errors)
-
+    
     password_hash = generate_password_hash(password)
-    user = User(name=name, email=email , password=password_hash)
+    user = User()
+    user.name = name
+    user.email = email
+    user.password = password_hash
+    file = request.files['image']
+    if file:
+        filename = file.filename
+        _, file_extension = os.path.splitext(filename)
+        unique_string = str(uuid.uuid4()) + file_extension
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], unique_string))
+        user.image = unique_string;
+        
     db.session.add(user)
     db.session.commit()
     
@@ -81,17 +98,14 @@ def updateUser(id):
     errors = validate_user_update_input(name , email)
 
     if errors:
-        # If there are validation errors, render the form again with the error messages
      session['errors'] = errors
-     return redirect(url_for('editUser', id=id))  # Corrected: Use 'editUser' instead of editUser
+     return redirect(url_for('editUser', id=id))
     
     user = User.query.filter_by(id=id).first()
-     
     if user : 
         user.name  = name
         user.email = email
         db.session.commit()
-        
         return redirect('/')
  
 
@@ -105,7 +119,10 @@ def deleteTodo(id):
      return redirect('/')
     #  return redirect(url_for('/', message = "User successfully deleted"))
 
-
+@app.route('/static/<filename>')
+def display_image(filename):
+    #print('display_image filename: ' + filename)
+    return redirect(url_for('static', filename=filename), code=301)
 
 if __name__ == '__main__':
     app.run(debug=True)
