@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, flash , session 
 import datetime
-
+from flask_socketio import SocketIO, emit
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import desc
 from model.User import db ,  User
@@ -8,6 +8,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from library.UserValidator import validate_input , validate_user_update_input
 import uuid
 import os
+import random
 
 
 app = Flask(__name__)
@@ -15,10 +16,22 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://root:@localhost/python_test'
 app.secret_key = 'mysecretkey'
 db.init_app(app)
+# socketio = SocketIO(app)
+socketio = SocketIO(app) 
 
 UPLOAD_FOLDER = 'static/images/uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # Context processor to pass current_year to all templates
+
+# @socketio.on('connect')
+# def on_connect():
+#     print('Client connected')
+  
+
+# @socketio.on('disconnect')
+# def on_disconnect():
+#     print('Client disconnected')
+
 @app.context_processor
 def inject_current_year():
     return {'current_year': datetime.datetime.now().year}
@@ -39,6 +52,8 @@ def index():
     message = ''
     if(request.args.get('message')):
         message = request.args.get('message')
+    
+    socketio.emit('USER11', {'logout': random.random()})    
     return render_template('index.html',users = all_records , message = message)
 
 @app.route('/about')
@@ -123,6 +138,8 @@ def deleteTodo(id):
 def display_image(filename):
     #print('display_image filename: ' + filename)
     return redirect(url_for('static', filename=filename), code=301)
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)
