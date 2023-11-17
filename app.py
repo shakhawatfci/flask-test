@@ -6,19 +6,29 @@ from sqlalchemy import desc
 from model.User import db ,  User
 from werkzeug.security import generate_password_hash, check_password_hash
 from library.UserValidator import validate_input , validate_user_update_input
-import uuid
+import uuid , json
 import os
+import socketio
 
 
 app = Flask(__name__)
-
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://root:@localhost/python_test'
+sio = socketio.Client()
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://root:@localhost/python_test?charset=utf8mb4&collation=utf8mb4_general_ci'
 app.secret_key = 'mysecretkey'
 db.init_app(app)
 
 UPLOAD_FOLDER = 'static/images/uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # Context processor to pass current_year to all templates
+
+@sio.event
+def connect():
+    print('Connected to server')
+
+@sio.event
+def disconnect():
+    print('Disconnected from scoket server')
+    
 @app.context_processor
 def inject_current_year():
     return {'current_year': datetime.datetime.now().year}
@@ -78,6 +88,8 @@ def saveUser():
     db.session.add(user)
     db.session.commit()
     
+    sio.emit('new_user_created_backend', {'id':user.id , 'name': name, 'email': email})  # Modify with the data you want to send
+    
     return redirect('/')
 
 @app.route('/user/edit/<id>')
@@ -106,6 +118,7 @@ def updateUser(id):
         user.name  = name
         user.email = email
         db.session.commit()
+        sio.emit('user_updated_backend', {'id':id , 'name': name, 'email': email}) 
         return redirect('/')
  
 
@@ -125,4 +138,8 @@ def display_image(filename):
     return redirect(url_for('static', filename=filename), code=301)
 
 if __name__ == '__main__':
+    try:
+        sio.connect('http://localhost:8080')
+    except Exception as e:
+        print(f"Failed to connect: {e}")
     app.run(debug=True)
