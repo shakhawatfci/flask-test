@@ -1,6 +1,8 @@
+import random
 from flask import Flask, render_template, request, redirect, url_for, flash , session 
 import datetime
-from flask_socketio import SocketIO, emit
+# from flask_socketio import SocketIO, emit
+import socketio
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import desc
 from model.User import db ,  User
@@ -17,7 +19,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://root:@localhost/
 app.secret_key = 'mysecretkey'
 db.init_app(app)
 # socketio = SocketIO(app)
-socketio = SocketIO(app) 
+# socketio = SocketIO(app) 
 
 UPLOAD_FOLDER = 'static/images/uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -52,7 +54,7 @@ def index():
     if(request.args.get('message')):
         message = request.args.get('message')
     
-    socketio.emit('USER11', {'logout': random.random()})    
+    # socketio.emit('USER11', {'logout': random.random()})    
     return render_template('index.html',users = all_records , message = message)
 
 @app.route('/about')
@@ -92,7 +94,7 @@ def saveUser():
     db.session.add(user)
     db.session.commit()
     
-    sio.emit('new_user_created_backend', {'id':user.id , 'name': name, 'email': email})  # Modify with the data you want to send
+    sio.emit('publish_socket_messages', {'channel':'new_user_created','msg':{'id':user.id , 'name': name, 'email': email}})  # Modify with the data you want to send
     
     return redirect('/')
 
@@ -123,6 +125,7 @@ def updateUser(id):
         user.email = email
         db.session.commit()
         sio.emit('user_updated_backend', {'id':id , 'name': name, 'email': email}) 
+        sio.emit('publish_socket_messages', {'channel':'user_updated','msg':{'id':user.id , 'name': name, 'email': email}})
         return redirect('/')
  
 
